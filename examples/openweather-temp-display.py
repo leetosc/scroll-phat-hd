@@ -39,7 +39,7 @@ import os
 
 # Uncomment the below if your display is upside down
 # (e.g. if you're using it in a Pimoroni Scroll Bot)
-scrollphathd.rotate(degrees=180)
+ROTATE_DEGREES = 180
 
 # OpenWeather API key. Make sure to put your unique OpenWeather key in here
 OW_API_KEY = "YOUR_API_KEY_GOES_HERE"
@@ -308,6 +308,7 @@ def run_display(stop_event=None, get_config=None):
     if get_config is None:
         get_config = lambda k, d=None: globals().get(k, d)
 
+    scrollphathd.rotate(degrees=get_config("ROTATE_DEGREES", ROTATE_DEGREES))
     _sync_config(get_config)
 
     get_weather_data()

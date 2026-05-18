@@ -20,6 +20,19 @@ class DisplayController:
         with self._lock:
             return self._error
 
+    def _reset_display_state(self):
+        """Clear module-level transforms left by a previous mode."""
+        try:
+            from scrollphathd.fonts import font5x7
+
+            scrollphathd.rotate(0)
+            scrollphathd.flip(x=False, y=False)
+            scrollphathd.scroll_to(0, 0)
+            scrollphathd.set_brightness(1.0)
+            scrollphathd.set_font(font5x7)
+        except Exception:
+            pass
+
     def _clear_display(self):
         try:
             scrollphathd.clear()
@@ -29,12 +42,14 @@ class DisplayController:
 
     def _worker(self, mode_id, script_path):
         try:
+            self._reset_display_state()
             module = load_module(script_path, mode_id)
             run_mode(module, self._stop_event, self.store.make_getter())
         except Exception as exc:
             with self._lock:
                 self._error = format_error(exc)
         finally:
+            self._reset_display_state()
             self._clear_display()
 
     def stop(self):
@@ -53,6 +68,7 @@ class DisplayController:
             self._error = None
 
         self.stop()
+        self._reset_display_state()
 
         config = dict(mode["defaults"])
         if not defaults_only:
