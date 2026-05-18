@@ -40,15 +40,38 @@ class DisplayController:
         except Exception:
             pass
 
+    def _poll_display_brightness(self, stop_event):
+        """Apply DISPLAY_BRIGHTNESS from config while a mode is running."""
+        last = object()
+        while not stop_event.is_set():
+            value = self.store.get("DISPLAY_BRIGHTNESS")
+            if value is not None and value != last:
+                try:
+                    scrollphathd.set_brightness(value)
+                except Exception:
+                    pass
+                last = value
+            stop_event.wait(0.15)
+
     def _worker(self, mode_id, script_path):
+        brightness_stop = threading.Event()
+        brightness_thread = threading.Thread(
+            target=self._poll_display_brightness,
+            args=(brightness_stop,),
+            name="scrollphat-brightness",
+            daemon=True,
+        )
         try:
             self._reset_display_state()
+            brightness_thread.start()
             module = load_module(script_path, mode_id)
             run_mode(module, self._stop_event, self.store.make_getter())
         except Exception as exc:
             with self._lock:
                 self._error = format_error(exc)
         finally:
+            brightness_stop.set()
+            brightness_thread.join(timeout=1.0)
             self._reset_display_state()
             self._clear_display()
 
