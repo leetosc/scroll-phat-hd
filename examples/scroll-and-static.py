@@ -5,6 +5,8 @@ import time
 import scrollphathd
 from scrollphathd.fonts import font3x5
 
+from mode_config import sync_scrolling_text
+
 DISPLAY_BRIGHTNESS = 0.5
 TEXT = " Hello World! "
 TEXT_BRIGHTNESS = 1.0
@@ -30,16 +32,19 @@ def run_display(stop_event=None, get_config=None):
     if get_config is None:
         get_config = lambda k, d=None: globals().get(k, d)
 
-    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
-    scrollphathd.write_string(
-        get_config("TEXT", TEXT),
-        x=0,
-        y=1,
-        font=font3x5,
-        brightness=get_config("TEXT_BRIGHTNESS", TEXT_BRIGHTNESS),
-    )
-
+    cache = {}
     while stop_event is None or not stop_event.is_set():
+        sync_scrolling_text(
+            get_config,
+            cache,
+            "TEXT",
+            TEXT,
+            "TEXT_BRIGHTNESS",
+            TEXT_BRIGHTNESS,
+            x=0,
+            y=1,
+            font=font3x5,
+        )
         scrollphathd.show(before_display=draw_static_elements)
         scrollphathd.scroll()
         time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))

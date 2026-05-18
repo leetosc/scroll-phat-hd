@@ -124,15 +124,21 @@ def run_display(stop_event=None, get_config=None):
         get_config = lambda k, d=None: globals().get(k, d)
 
     scrollphathd.set_clear_on_exit()
-    scrollphathd.set_brightness(get_config('DISPLAY_BRIGHTNESS', DISPLAY_BRIGHTNESS))
-    scrollphathd.rotate(int(get_config('ROTATE_DEGREES', ROTATE_DEGREES)))
 
     width = scrollphathd.get_shape()[0]
     height = scrollphathd.get_shape()[1]
-
     pixels = [[0 for _ in range(height)] for _ in range(width)]
+    layout_cache = {}
 
     while stop_event is None or not stop_event.is_set():
+        rotate = int(get_config('ROTATE_DEGREES', ROTATE_DEGREES))
+        if layout_cache.get('rotate') != rotate:
+            scrollphathd.rotate(rotate)
+            width = scrollphathd.get_shape()[0]
+            height = scrollphathd.get_shape()[1]
+            pixels = [[0 for _ in range(height)] for _ in range(width)]
+            layout_cache['rotate'] = rotate
+
         values = build_values(get_config)
         if values['lightning'] > 0:
             generate_lightning(values['lightning'])

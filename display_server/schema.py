@@ -23,6 +23,8 @@ def discover_constants(script_path):
         value = _literal_value(node.value)
         if value is None:
             continue
+        if isinstance(value, tuple):
+            continue
         for target in node.targets:
             if isinstance(target, ast.Name) and target.id.isupper():
                 constants[target.id] = value
@@ -43,6 +45,8 @@ def _float_step(default):
 
 def infer_field_type(name, value):
     if isinstance(value, list):
+        if value and all(isinstance(x, int) for x in value):
+            return "int_list"
         return "list"
     if isinstance(value, bool):
         return "bool"
@@ -76,6 +80,8 @@ def build_schema(constants):
                 entry["step"] = _float_step(default)
         elif field_type == "int":
             entry["step"] = 1
+        elif field_type == "int_list":
+            entry["step"] = 1
         fields.append(entry)
     return fields
 
@@ -83,7 +89,10 @@ def build_schema(constants):
 MODE_HINTS = {
     "cpu": {"requires_deps": ["psutil"]},
     "cellular-automata": {"requires_deps": ["numpy"]},
-    "twitter-hashtag": {"requires_deps": ["tweepy"], "note": "Requires Twitter API keys in config"},
+    "twitter-hashtag": {
+        "requires_deps": ["tweepy"],
+        "note": "Requires Twitter API keys in config; stream reconnects when keys or KEYWORD change",
+    },
     "openweather-temp-display": {"note": "Requires OpenWeather API key (OW_API_KEY)"},
     "hello-pigpiod": {"requires_deps": ["pigpio"], "note": "Requires pigpiod daemon"},
 }

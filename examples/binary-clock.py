@@ -44,9 +44,9 @@ class Clock(Time):
 
 
 class BinaryClock(Clock):
-    def __init__(self, max_intensity):
+    def __init__(self, max_intensity, max_degree=MAX_DEGREE):
         self._SPHD = ScrollPhatHD()
-        self._max_degree = MAX_DEGREE
+        self._max_degree = max_degree
         self._hand_position = [2, 4, 7, 9, 12, 14]
         self._hand_bits = 4
         self._max_intensity = max_intensity
@@ -120,9 +120,19 @@ def run_display(stop_event=None, get_config=None):
     if get_config is None:
         get_config = lambda k, d=None: globals().get(k, d)
 
-    clock = BinaryClock(get_config("MAX_INTENSITY", MAX_INTENSITY))
+    clock = BinaryClock(
+        get_config("MAX_INTENSITY", MAX_INTENSITY),
+        get_config("MAX_DEGREE", MAX_DEGREE),
+    )
 
     while stop_event is None or not stop_event.is_set():
+        max_intensity = get_config("MAX_INTENSITY", MAX_INTENSITY)
+        max_degree = get_config("MAX_DEGREE", MAX_DEGREE)
+        if max_intensity != clock._max_intensity or max_degree != clock._max_degree:
+            clock._max_intensity = max_intensity
+            clock._max_degree = max_degree
+            clock._intensities_init(max_intensity)
+
         clock.update()
         clock.draw()
         time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))

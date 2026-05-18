@@ -15,24 +15,24 @@ INITIAL_CELLS = 100
 INITIAL_SLEEP = 20
 
 
-def generatemap(matrix, get_config):
-    for y in range(-1, YSIZE + 1):
-        for x in range(-1, XSIZE + 1):
+def generatemap(matrix, xsize, ysize, get_config):
+    for y in range(-1, ysize + 1):
+        for x in range(-1, xsize + 1):
             matrix[y, x] = 0
 
     for _ in range(get_config("INITIAL_CELLS", INITIAL_CELLS)):
-        y = random.randint(0, YSIZE - 1)
-        x = random.randint(0, XSIZE - 1)
+        y = random.randint(0, ysize - 1)
+        x = random.randint(0, xsize - 1)
         matrix[y, x] = 1
 
 
-def printmap(matrix, sleeptime, get_config, stop_event):
+def printmap(matrix, xsize, ysize, sleeptime, get_config, stop_event):
     bright = get_config("BRIGHT", BRIGHT)
     alive_counter = 0
     scrollphathd.clear()
 
-    for y in range(0, YSIZE):
-        for x in range(0, XSIZE):
+    for y in range(0, ysize):
+        for x in range(0, xsize):
             if matrix[y, x]:
                 scrollphathd.set_pixel(x, y, bright)
                 alive_counter += 1
@@ -48,10 +48,10 @@ def printmap(matrix, sleeptime, get_config, stop_event):
     return alive_counter
 
 
-def lifecycle(matrix):
+def lifecycle(matrix, xsize, ysize):
     soonmatrix = {key: value for key, value in matrix.items()}
-    for y in range(YSIZE):
-        for x in range(XSIZE):
+    for y in range(ysize):
+        for x in range(xsize):
             neighbors = countneighbors(py=y, px=x, status=matrix[y, x], matrix=matrix)
             if matrix[y, x]:
                 soonmatrix[y, x] = 1 if 1 < neighbors < 4 else 0
@@ -75,18 +75,29 @@ def run_display(stop_event=None, get_config=None):
         get_config = lambda k, d=None: globals().get(k, d)
 
     while stop_event is None or not stop_event.is_set():
+        xsize = get_config("XSIZE", XSIZE)
+        ysize = get_config("YSIZE", YSIZE)
         matrix = {}
         max_iterations = get_config("MAX_ITERATIONS", MAX_ITERATIONS)
         stagnation_max = get_config("STAGNATION_MAX", STAGNATION_MAX)
         alive_count_old = 0
         stagnation_count = 0
 
-        generatemap(matrix, get_config)
-        printmap(matrix, get_config("INITIAL_SLEEP", INITIAL_SLEEP), get_config, stop_event)
+        generatemap(matrix, xsize, ysize, get_config)
+        printmap(
+            matrix,
+            xsize,
+            ysize,
+            get_config("INITIAL_SLEEP", INITIAL_SLEEP),
+            get_config,
+            stop_event,
+        )
 
         while stop_event is None or not stop_event.is_set():
-            lifecycle(matrix)
-            active_count = printmap(matrix, get_config("SPEED", SPEED), get_config, stop_event)
+            lifecycle(matrix, xsize, ysize)
+            active_count = printmap(
+                matrix, xsize, ysize, get_config("SPEED", SPEED), get_config, stop_event
+            )
 
             if alive_count_old == active_count:
                 stagnation_count += 1

@@ -308,7 +308,7 @@ def run_display(stop_event=None, get_config=None):
     if get_config is None:
         get_config = lambda k, d=None: globals().get(k, d)
 
-    scrollphathd.rotate(degrees=get_config("ROTATE_DEGREES", ROTATE_DEGREES))
+    rotate_cache = {}
     _sync_config(get_config)
 
     get_weather_data()
@@ -316,6 +316,11 @@ def run_display(stop_event=None, get_config=None):
     draw_wind_line()
 
     while stop_event is None or not stop_event.is_set():
+        degrees = get_config("ROTATE_DEGREES", ROTATE_DEGREES)
+        if rotate_cache.get("ROTATE_DEGREES") != degrees:
+            scrollphathd.rotate(degrees=degrees)
+            rotate_cache["ROTATE_DEGREES"] = degrees
+
         _sync_config(get_config)
 
         if not (int(time.time()) % POLL_INTERVAL):
@@ -344,6 +349,8 @@ def run_display(stop_event=None, get_config=None):
             if stop_event is not None and stop_event.is_set():
                 return
             draw_kr_pulse(pulse, -1)
+
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
 
 
 if __name__ == "__main__":

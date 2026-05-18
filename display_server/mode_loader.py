@@ -3,9 +3,14 @@ import os
 import sys
 import traceback
 
+from .registry import EXAMPLES_DIR
+
 
 def load_module(script_path, mode_id):
     """Load a script as a module with a stable name."""
+    if EXAMPLES_DIR not in sys.path:
+        sys.path.insert(0, EXAMPLES_DIR)
+
     module_name = "scrollphat_mode_{}".format(mode_id.replace("-", "_"))
     spec = importlib.util.spec_from_file_location(module_name, script_path)
     if spec is None or spec.loader is None:

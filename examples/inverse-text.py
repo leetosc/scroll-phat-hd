@@ -5,6 +5,8 @@ import time
 import scrollphathd
 from scrollphathd.fonts import font3x5
 
+from mode_config import config_tuple
+
 DISPLAY_BRIGHTNESS = 0.3
 TEXT = "Ahoy!"
 LOOP_SLEEP = 0.5
@@ -29,12 +31,14 @@ def run_display(stop_event=None, get_config=None):
     if get_config is None:
         get_config = lambda k, d=None: globals().get(k, d)
 
-    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
-    scrollphathd.fill(1, 0, 0, 17, 7)
-    scrollphathd.write_string(get_config("TEXT", TEXT), y=1, font=font3x5, brightness=0)
-    scrollphathd.show()
-
+    cache = {}
     while stop_event is None or not stop_event.is_set():
+        text_key = config_tuple(get_config, [("TEXT", TEXT)])
+        if cache.get("text") != text_key:
+            scrollphathd.fill(1, 0, 0, 17, 7)
+            scrollphathd.write_string(text_key[0], y=1, font=font3x5, brightness=0)
+            cache["text"] = text_key
+
         scrollphathd.show(before_display=draw_static_elements)
         time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
 

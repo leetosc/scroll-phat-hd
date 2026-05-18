@@ -8,6 +8,7 @@ except ImportError:
     numpy = None
 
 import scrollphathd
+from mode_config import parse_int_list
 
 DISPLAY_BRIGHTNESS = 0.1
 MAX_STEPS = 100
@@ -27,17 +28,17 @@ def run_display(stop_event=None, get_config=None):
         )
 
     scrollphathd.clear()
-    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
 
     rules = numpy.array([22, 30, 54, 60, 75, 90, 110, 150])
     rule = rules[0]
-    max_steps = get_config("MAX_STEPS", MAX_STEPS)
     loop_count = 0
     matrix = numpy.zeros((7, 17), dtype=numpy.int)
-    matrix[0] = FIRST_ROW
+    matrix[0] = parse_int_list(get_config("FIRST_ROW", FIRST_ROW), FIRST_ROW)
     row = 0
 
     while stop_event is None or not stop_event.is_set():
+        max_steps = get_config("MAX_STEPS", MAX_STEPS)
+
         for y in range(0, 7):
             for x in range(0, 17):
                 scrollphathd.pixel(x, y, matrix[y, x])
@@ -49,7 +50,7 @@ def run_display(stop_event=None, get_config=None):
             loop_count = 0
             row = 0
             matrix = numpy.zeros((7, 17), dtype=numpy.int)
-            matrix[0] = FIRST_ROW
+            matrix[0] = parse_int_list(get_config("FIRST_ROW", FIRST_ROW), FIRST_ROW)
             rules = numpy.roll(rules, -1, axis=0)
             rule = rules[0]
 

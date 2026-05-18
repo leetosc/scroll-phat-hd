@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import json
 import time
 
 import scrollphathd
+from mode_config import parse_lines
 
 DISPLAY_BRIGHTNESS = 0.2
 REWIND = True
@@ -19,28 +19,6 @@ LINES = [
     "'til we're altogether aching",
     "Then we'll grab a cup of grog down in the old #BILGETANK",
 ]
-
-
-def lines_from_config(get_config):
-    """Return scroll lines from config (list, JSON, or one line per row)."""
-    raw = get_config("LINES", LINES)
-    if isinstance(raw, list):
-        return [str(line) for line in raw if str(line).strip()]
-    if isinstance(raw, str):
-        text = raw.strip()
-        if not text:
-            return list(LINES)
-        if text.startswith("["):
-            try:
-                parsed = json.loads(text)
-                if isinstance(parsed, list):
-                    return [str(line) for line in parsed if str(line).strip()]
-            except (ValueError, TypeError):
-                pass
-        if "\n" in text:
-            return [line.strip() for line in text.splitlines() if line.strip()]
-        return [part.strip() for part in text.split(",") if part.strip()]
-    return list(LINES)
 
 
 def build_scroll_buffer(lines, line_height):
@@ -60,7 +38,7 @@ def run_display(stop_event=None, get_config=None):
         get_config = lambda k, d=None: globals().get(k, d)
 
     while stop_event is None or not stop_event.is_set():
-        lines = lines_from_config(get_config)
+        lines = parse_lines(get_config("LINES", LINES), LINES)
         rewind = get_config("REWIND", REWIND)
         delay = get_config("SCROLL_DELAY", SCROLL_DELAY)
         line_height = scrollphathd.DISPLAY_HEIGHT + get_config("LINE_HEIGHT_PADDING", LINE_HEIGHT_PADDING)

@@ -21,8 +21,10 @@ function currentModeMeta() {
   return modes.find((m) => m.id === state.mode);
 }
 
-function listToText(value) {
-  if (Array.isArray(value)) return value.join("\n");
+function listToText(value, field) {
+  if (Array.isArray(value)) {
+    return field?.type === "int_list" ? value.join(" ") : value.join("\n");
+  }
   return String(value ?? "");
 }
 
@@ -30,11 +32,18 @@ function coerceValue(field, raw) {
   if (field.type === "bool") return raw === "true" || raw === true;
   if (field.type === "int") return parseInt(raw, 10);
   if (field.type === "float") return parseFloat(raw);
-  if (field.type === "list") {
-    return String(raw)
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+  if (field.type === "list" || field.type === "int_list") {
+    const parts =
+      field.type === "int_list"
+        ? String(raw).trim().split(/[\s,]+/).filter(Boolean)
+        : String(raw)
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean);
+    if (field.type === "int_list") {
+      return parts.map((x) => parseInt(x, 10));
+    }
+    return parts;
   }
   return raw;
 }
@@ -64,13 +73,20 @@ function buildConfigForm() {
       input.name = field.name;
       input.checked = Boolean(value);
       wrap.appendChild(input);
-    } else if (field.type === "list") {
+    } else if (field.type === "list" || field.type === "int_list") {
       const input = document.createElement("textarea");
       input.id = "cfg-" + field.name;
       input.name = field.name;
-      input.rows = Math.min(8, Math.max(3, listToText(value).split("\n").length + 1));
-      input.value = listToText(value);
+      const text = listToText(value, field);
+      input.rows = Math.min(8, Math.max(3, text.split("\n").length + 1));
+      input.value = text;
       wrap.appendChild(input);
+      if (field.type === "int_list") {
+        const hint = document.createElement("p");
+        hint.className = "hint";
+        hint.textContent = "Space-separated integers";
+        wrap.appendChild(hint);
+      }
     } else if (field.type === "float" && field.min !== undefined) {
       const input = document.createElement("input");
       input.type = "range";

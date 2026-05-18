@@ -16,24 +16,30 @@ TEXT_BRIGHTNESS = 0.5
 LOOP_SLEEP = 0.05
 
 
+def _utf8_scroll_text(get_config):
+    text = [unichr(x) for x in range(256)]
+    return u"{}        ".format(u"".join(text))
+
+
 def run_display(stop_event=None, get_config=None):
     if get_config is None:
         get_config = lambda k, d=None: globals().get(k, d)
 
-    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
-
-    text = [unichr(x) for x in range(256)]
-    text = u"{}        ".format(u"".join(text))
-
-    scrollphathd.write_string(
-        text,
-        x=0,
-        y=0,
-        font=font5x7,
-        brightness=get_config("TEXT_BRIGHTNESS", TEXT_BRIGHTNESS),
-    )
-
+    cache = {}
     while stop_event is None or not stop_event.is_set():
+        brightness = get_config("TEXT_BRIGHTNESS", TEXT_BRIGHTNESS)
+        key = (brightness,)
+        if cache.get("scroll") != key:
+            scrollphathd.clear()
+            scrollphathd.write_string(
+                _utf8_scroll_text(get_config),
+                x=0,
+                y=0,
+                font=font5x7,
+                brightness=brightness,
+            )
+            cache["scroll"] = key
+
         scrollphathd.show()
         scrollphathd.scroll()
         time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
