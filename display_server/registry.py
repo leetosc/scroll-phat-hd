@@ -5,7 +5,7 @@ from .schema import build_schema, discover_constants, mode_metadata
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXAMPLES_DIR = os.path.join(REPO_ROOT, "examples")
 DEFAULT_MODE = "clock4"
-EXCLUDED = {"web-api"}
+EXCLUDED = {"web-api", "mode_config"}
 
 
 def _discover_modes():
@@ -48,7 +48,7 @@ MODES = _discover_modes()
 
 
 def list_modes():
-    return [
+    modes = [
         {
             "id": m["id"],
             "label": m["label"],
@@ -58,6 +58,7 @@ def list_modes():
         }
         for m in MODES.values()
     ]
+    return sorted(modes, key=lambda m: m["label"].lower())
 
 
 def get_mode(mode_id):
