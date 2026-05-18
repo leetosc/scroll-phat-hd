@@ -21,10 +21,21 @@ function currentModeMeta() {
   return modes.find((m) => m.id === state.mode);
 }
 
+function listToText(value) {
+  if (Array.isArray(value)) return value.join("\n");
+  return String(value ?? "");
+}
+
 function coerceValue(field, raw) {
   if (field.type === "bool") return raw === "true" || raw === true;
   if (field.type === "int") return parseInt(raw, 10);
   if (field.type === "float") return parseFloat(raw);
+  if (field.type === "list") {
+    return String(raw)
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
   return raw;
 }
 
@@ -52,6 +63,13 @@ function buildConfigForm() {
       input.id = "cfg-" + field.name;
       input.name = field.name;
       input.checked = Boolean(value);
+      wrap.appendChild(input);
+    } else if (field.type === "list") {
+      const input = document.createElement("textarea");
+      input.id = "cfg-" + field.name;
+      input.name = field.name;
+      input.rows = Math.min(8, Math.max(3, listToText(value).split("\n").length + 1));
+      input.value = listToText(value);
       wrap.appendChild(input);
     } else if (field.type === "float" && field.min !== undefined) {
       const input = document.createElement("input");

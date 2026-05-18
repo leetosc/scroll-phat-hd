@@ -96,13 +96,17 @@ button:hover {
 }
 
 .field input[type="text"],
-.field input[type="number"] {
+.field input[type="number"],
+.field textarea {
   width: 100%;
   padding: 0.4rem;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 4px;
+  font-family: inherit;
+  font-size: inherit;
+  resize: vertical;
 }
 
 .field input[type="range"] {

@@ -42,6 +42,8 @@ def _float_step(default):
 
 
 def infer_field_type(name, value):
+    if isinstance(value, list):
+        return "list"
     if isinstance(value, bool):
         return "bool"
     if isinstance(value, int) and not isinstance(value, bool):

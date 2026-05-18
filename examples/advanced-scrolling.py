@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import time
 
 import scrollphathd
@@ -20,25 +21,52 @@ LINES = [
 ]
 
 
+def lines_from_config(get_config):
+    """Return scroll lines from config (list, JSON, or one line per row)."""
+    raw = get_config("LINES", LINES)
+    if isinstance(raw, list):
+        return [str(line) for line in raw if str(line).strip()]
+    if isinstance(raw, str):
+        text = raw.strip()
+        if not text:
+            return list(LINES)
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    return [str(line) for line in parsed if str(line).strip()]
+            except (ValueError, TypeError):
+                pass
+        if "\n" in text:
+            return [line.strip() for line in text.splitlines() if line.strip()]
+        return [part.strip() for part in text.split(",") if part.strip()]
+    return list(LINES)
+
+
+def build_scroll_buffer(lines, line_height):
+    scrollphathd.clear()
+    offset_left = 0
+    lengths = [0] * len(lines)
+    for line, text in enumerate(lines):
+        lengths[line] = scrollphathd.write_string(text, x=offset_left, y=line_height * line)
+        offset_left += lengths[line]
+    if lines:
+        scrollphathd.set_pixel(offset_left - 1, (len(lines) * line_height) - 1, 0)
+    return lengths
+
+
 def run_display(stop_event=None, get_config=None):
     if get_config is None:
         get_config = lambda k, d=None: globals().get(k, d)
 
-    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
-    rewind = get_config("REWIND", REWIND)
-    delay = get_config("SCROLL_DELAY", SCROLL_DELAY)
-    line_height = scrollphathd.DISPLAY_HEIGHT + get_config("LINE_HEIGHT_PADDING", LINE_HEIGHT_PADDING)
-
-    offset_left = 0
-    lengths = [0] * len(LINES)
-
-    for line, text in enumerate(LINES):
-        lengths[line] = scrollphathd.write_string(text, x=offset_left, y=line_height * line)
-        offset_left += lengths[line]
-
-    scrollphathd.set_pixel(offset_left - 1, (len(LINES) * line_height) - 1, 0)
-
     while stop_event is None or not stop_event.is_set():
+        lines = lines_from_config(get_config)
+        rewind = get_config("REWIND", REWIND)
+        delay = get_config("SCROLL_DELAY", SCROLL_DELAY)
+        line_height = scrollphathd.DISPLAY_HEIGHT + get_config("LINE_HEIGHT_PADDING", LINE_HEIGHT_PADDING)
+        pause_mult = get_config("LINE_PAUSE_MULTIPLIER", LINE_PAUSE_MULTIPLIER)
+
+        lengths = build_scroll_buffer(lines, line_height)
         scrollphathd.scroll_to(0, 0)
         scrollphathd.show()
 
@@ -48,7 +76,7 @@ def run_display(stop_event=None, get_config=None):
         for current_line, line_length in enumerate(lengths):
             if stop_event is not None and stop_event.is_set():
                 return
-            time.sleep(delay * get_config("LINE_PAUSE_MULTIPLIER", LINE_PAUSE_MULTIPLIER))
+            time.sleep(delay * pause_mult)
 
             for _y in range(line_length):
                 if stop_event is not None and stop_event.is_set():
@@ -58,7 +86,7 @@ def run_display(stop_event=None, get_config=None):
                 time.sleep(delay)
                 scrollphathd.show()
 
-            if current_line == len(LINES) - 1 and rewind:
+            if current_line == len(lengths) - 1 and rewind:
                 for _y in range(pos_y):
                     if stop_event is not None and stop_event.is_set():
                         return
