@@ -30,6 +30,17 @@ def discover_constants(script_path):
     return constants
 
 
+def _float_step(default):
+    """Pick an HTML step that accepts the default value (e.g. 0.05 needs step <= 0.01)."""
+    if default == 0:
+        return 0.01
+    text = format(default, "f").rstrip("0").rstrip(".")
+    if "." not in text:
+        return 1.0 if abs(default) >= 10 else 0.1
+    places = len(text.split(".")[1])
+    return 10 ** (-places)
+
+
 def infer_field_type(name, value):
     if isinstance(value, bool):
         return "bool"
@@ -60,7 +71,7 @@ def build_schema(constants):
                 entry["max"] = 1.0
                 entry["step"] = 0.01
             else:
-                entry["step"] = 0.1
+                entry["step"] = _float_step(default)
         elif field_type == "int":
             entry["step"] = 1
         fields.append(entry)

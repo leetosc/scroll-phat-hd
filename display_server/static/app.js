@@ -77,7 +77,11 @@ function buildConfigForm() {
       input.id = "cfg-" + field.name;
       input.name = field.name;
       input.value = value;
-      if (field.step) input.step = field.step;
+      if (field.type === "float") {
+        input.step = field.step || "any";
+      } else if (field.step) {
+        input.step = field.step;
+      }
       wrap.appendChild(input);
     }
 
