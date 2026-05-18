@@ -59,7 +59,7 @@ def draw_seconds_bar(sec_fraction):
         if pixel > 0:
             scrollphathd.set_pixel(x, 6, pixel * BAR_BRIGHTNESS)
 
-    head_fraction = total - head_x
+    head_fraction = min(1.0, (total - head_x) * 2.0)
     scrollphathd.set_pixel(
         head_x,
         6,
