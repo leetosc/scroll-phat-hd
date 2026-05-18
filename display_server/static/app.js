@@ -1,6 +1,5 @@
 let modes = [];
 let state = { mode: null, config: {}, error: null };
-let formDirty = false;
 
 const modeSelect = document.getElementById("mode-select");
 const configForm = document.getElementById("config-form");
@@ -138,9 +137,13 @@ function buildConfigForm() {
   }
 }
 
-function updateUI() {
+/** Update status/error only — never rebuilds the settings form. */
+function updateStatus() {
   activeMode.textContent = state.mode || "—";
-  modeSelect.value = state.mode || "";
+
+  if (state.mode && modeSelect.value !== state.mode) {
+    modeSelect.value = state.mode;
+  }
 
   const meta = currentModeMeta();
   if (meta && meta.note) {
@@ -160,15 +163,17 @@ function updateUI() {
   } else {
     banner.classList.add("hidden");
   }
-
-  if (!formDirty) {
-    buildConfigForm();
-  }
 }
 
-async function refreshState() {
+/** Full UI refresh including rebuilding the settings form. */
+function updateUI() {
+  updateStatus();
+  buildConfigForm();
+}
+
+async function refreshStatus() {
   state = await fetchJson("/api/state");
-  updateUI();
+  updateStatus();
 }
 
 async function loadModes() {
@@ -179,16 +184,8 @@ async function loadModes() {
     .join("");
 }
 
-configForm.addEventListener("input", () => {
-  formDirty = true;
-});
-configForm.addEventListener("change", () => {
-  formDirty = true;
-});
-
 document.getElementById("btn-switch").addEventListener("click", async () => {
   const mode = modeSelect.value;
-  formDirty = false;
   state = await fetchJson("/api/mode", {
     method: "POST",
     body: JSON.stringify({ mode }),
@@ -216,20 +213,19 @@ configForm.addEventListener("submit", async (e) => {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-  formDirty = false;
   updateUI();
 });
 
 document.getElementById("btn-reset").addEventListener("click", async () => {
-  formDirty = false;
   state = await fetchJson("/api/reset", { method: "POST" });
   updateUI();
 });
 
 async function init() {
   await loadModes();
-  await refreshState();
-  setInterval(refreshState, 5000);
+  state = await fetchJson("/api/state");
+  updateUI();
+  setInterval(refreshStatus, 5000);
 }
 
 init().catch((err) => {
