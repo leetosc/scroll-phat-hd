@@ -30,7 +30,7 @@ def run_display(stop_event=None, get_config=None):
         for x in range(0, 17):
             for y in range(0, 7):
                 v = base + (amp * math.sin((x * s) + i / phase_div) * math.cos((y * s) + i / phase_div))
-                scrollphathd.pixel(x, y, v)
+                scrollphathd.pixel(x, y, max(0.0, min(1.0, v)))
 
         time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
         scrollphathd.show()
