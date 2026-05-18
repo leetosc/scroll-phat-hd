@@ -6,7 +6,18 @@ import json
 def parse_lines(raw, default):
     """Parse line lists from config (list, JSON, newlines, or commas)."""
     if isinstance(raw, list):
-        return [str(line) for line in raw if str(line).strip()]
+        lines = []
+        for item in raw:
+            text = str(item).strip()
+            if not text:
+                continue
+            if "," in text and "\n" not in text:
+                lines.extend(part.strip() for part in text.split(",") if part.strip())
+            elif "\n" in text:
+                lines.extend(line.strip() for line in text.splitlines() if line.strip())
+            else:
+                lines.append(text)
+        return lines if lines else list(default)
     if isinstance(raw, str):
         text = raw.strip()
         if not text:

@@ -87,6 +87,20 @@ function buildConfigForm() {
         hint.textContent = "Space-separated integers";
         wrap.appendChild(hint);
       }
+    } else if (field.type === "str" && field.widget === "textarea") {
+      const input = document.createElement("textarea");
+      input.id = "cfg-" + field.name;
+      input.name = field.name;
+      const text = Array.isArray(value) ? value.join("\n") : String(value ?? "");
+      input.rows = Math.min(10, Math.max(4, text.split("\n").length + 1));
+      input.value = text;
+      wrap.appendChild(input);
+      if (field.name === "LINES") {
+        const hint = document.createElement("p");
+        hint.className = "hint";
+        hint.textContent = "One line of text per row";
+        wrap.appendChild(hint);
+      }
     } else if (field.type === "float" && field.min !== undefined) {
       const input = document.createElement("input");
       input.type = "range";

@@ -11,14 +11,16 @@ SCROLL_DELAY = 0.03
 LINE_PAUSE_MULTIPLIER = 10
 LINE_HEIGHT_PADDING = 2
 
-LINES = [
-    "In the old #BILGETANK we'll keep you in the know",
-    "In the old #BILGETANK we'll fix your techie woes",
-    "And we'll make things",
-    "And we'll break things",
-    "'til we're altogether aching",
-    "Then we'll grab a cup of grog down in the old #BILGETANK",
-]
+LINES = """In the old #BILGETANK we'll keep you in the know
+In the old #BILGETANK we'll fix your techie woes
+And we'll make things
+And we'll break things
+'til we're altogether aching
+Then we'll grab a cup of grog down in the old #BILGETANK"""
+
+
+def _default_lines():
+    return parse_lines(LINES, [])
 
 
 def build_scroll_buffer(lines, line_height):
@@ -38,7 +40,7 @@ def run_display(stop_event=None, get_config=None):
         get_config = lambda k, d=None: globals().get(k, d)
 
     while stop_event is None or not stop_event.is_set():
-        lines = parse_lines(get_config("LINES", LINES), LINES)
+        lines = parse_lines(get_config("LINES", LINES), _default_lines())
         rewind = get_config("REWIND", REWIND)
         delay = get_config("SCROLL_DELAY", SCROLL_DELAY)
         line_height = scrollphathd.DISPLAY_HEIGHT + get_config("LINE_HEIGHT_PADDING", LINE_HEIGHT_PADDING)

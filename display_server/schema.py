@@ -82,6 +82,10 @@ def build_schema(constants):
             entry["step"] = 1
         elif field_type == "int_list":
             entry["step"] = 1
+        elif field_type == "str" and (
+            name == "LINES" or "\n" in str(default)
+        ):
+            entry["widget"] = "textarea"
         fields.append(entry)
     return fields
 
