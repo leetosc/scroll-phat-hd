@@ -137,14 +137,20 @@ function buildConfigForm() {
   }
 }
 
-/** Update status/error only — never rebuilds the settings form. */
-function updateStatus() {
-  activeMode.textContent = state.mode || "—";
+/** Poll the server for errors/active mode only — never touches form controls. */
+function updateStatusPoll() {
+  const active = modes.find((m) => m.id === state.mode);
+  activeMode.textContent = active ? active.label : state.mode || "—";
 
-  if (state.mode && modeSelect.value !== state.mode) {
-    modeSelect.value = state.mode;
+  if (state.error) {
+    banner.textContent = state.error;
+    banner.classList.remove("hidden");
+  } else {
+    banner.classList.add("hidden");
   }
+}
 
+function syncModeNote() {
   const meta = currentModeMeta();
   if (meta && meta.note) {
     modeNote.textContent = meta.note;
@@ -156,24 +162,21 @@ function updateStatus() {
   } else {
     modeNote.textContent = "";
   }
-
-  if (state.error) {
-    banner.textContent = state.error;
-    banner.classList.remove("hidden");
-  } else {
-    banner.classList.add("hidden");
-  }
 }
 
 /** Full UI refresh including rebuilding the settings form. */
 function updateUI() {
-  updateStatus();
+  if (state.mode) {
+    modeSelect.value = state.mode;
+  }
+  syncModeNote();
+  updateStatusPoll();
   buildConfigForm();
 }
 
 async function refreshStatus() {
   state = await fetchJson("/api/state");
-  updateStatus();
+  updateStatusPoll();
 }
 
 async function loadModes() {
