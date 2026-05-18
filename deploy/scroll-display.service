@@ -1,0 +1,16 @@
+[Unit]
+Description=Scroll pHAT HD Display Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/scroll-phat-hd
+ExecStart=/usr/bin/python3 -m display_server.app
+Restart=always
+RestartSec=5
+Environment=SCROLLPHAT_HOST=0.0.0.0
+Environment=SCROLLPHAT_PORT=8080
+
+[Install]
+WantedBy=multi-user.target

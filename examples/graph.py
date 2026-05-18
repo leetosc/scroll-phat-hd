@@ -1,38 +1,43 @@
 #!/usr/bin/env python
 
-import time
 import random
+import time
 
 import scrollphathd
 
-print("""
-Scroll pHAT HD: Graph
-
-Displays a graph with random values.
-
-Press Ctrl+C to exit!
-
-""")
-
 MIN_VALUE = 0
 MAX_VALUE = 50
+GRAPH_BRIGHTNESS = 0.3
+LOOP_SLEEP = 0.05
 
-# Uncomment the below if your display is upside down
-#   (e.g. if you're using it in a Pimoroni Scroll Bot)
-# scrollphathd.rotate(degrees=180)
 
-# Begin with a list of 17 zeros
-values = [0] * scrollphathd.DISPLAY_WIDTH
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
 
-while True:
-    # Insert a random value at the beginning
-    values.insert(0, random.randrange(MIN_VALUE, MAX_VALUE))
+    values = [0] * scrollphathd.DISPLAY_WIDTH
 
-    # Get rid of the last value, keeping the list at 17 (DISPLAY_WIDTH) items
-    values = values[:scrollphathd.DISPLAY_WIDTH]
+    while stop_event is None or not stop_event.is_set():
+        min_val = get_config("MIN_VALUE", MIN_VALUE)
+        max_val = get_config("MAX_VALUE", MAX_VALUE)
+        values.insert(0, random.randrange(min_val, max_val))
+        values = values[:scrollphathd.DISPLAY_WIDTH]
 
-    # Plot the random values onto Scroll pHAT HD
-    scrollphathd.set_graph(values, low=MIN_VALUE, high=MAX_VALUE, brightness=0.3)
+        scrollphathd.set_graph(
+            values,
+            low=min_val,
+            high=max_val,
+            brightness=get_config("GRAPH_BRIGHTNESS", GRAPH_BRIGHTNESS),
+        )
 
-    scrollphathd.show()
-    time.sleep(0.05)
+        scrollphathd.show()
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
+
+
+if __name__ == "__main__":
+    print("Scroll pHAT HD: Graph\nPress Ctrl+C to exit!\n")
+    try:
+        run_display()
+    except KeyboardInterrupt:
+        scrollphathd.clear()
+        scrollphathd.show()

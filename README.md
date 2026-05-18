@@ -71,6 +71,28 @@ sudo python3 setup.py install
 
 In all cases you will have to enable the i2c bus.
 
+## Display web control
+
+A Flask server can drive the display from a browser: switch between `clock4` and top-level `examples/` demos, and adjust brightness and other settings live.
+
+On the Pi, install Flask and enable the systemd service (disable any old `clock4.py` service first so only one process uses the display):
+
+```bash
+cd /home/pi/scroll-phat-hd
+pip3 install -r requirements-display.txt
+sudo cp deploy/scroll-display.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now scroll-display.service
+```
+
+Open `http://<pi-ip>:8080/` on your LAN. After every reboot the display starts **clock4** with script defaults (no saved mode or sliders).
+
+Manual run:
+
+```bash
+python3 -m display_server.app
+```
+
 ## Alternative Libraries
 
 * Node JS library by @whatsim - https://github.com/whatsim/scrollcontroller

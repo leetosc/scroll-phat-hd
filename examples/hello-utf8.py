@@ -5,33 +5,44 @@ import time
 
 import scrollphathd
 from scrollphathd.fonts import font5x7
-from six import unichr
 
-print("""
-Scroll pHAT HD: Hello utf-8
+try:
+    from six import unichr
+except ImportError:
+    unichr = chr
 
-Scrolls the 256 characters Scroll pHAT supports across the screen.
+DISPLAY_BRIGHTNESS = 0.5
+TEXT_BRIGHTNESS = 0.5
+LOOP_SLEEP = 0.05
 
-Note: many otherwise useless control characters have been
-replaced with symbols you might find useful!
 
-Press Ctrl+C to exit!
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
 
-""")
+    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
 
-# Uncomment to rotate the text
-# scrollphathd.rotate(180)
+    text = [unichr(x) for x in range(256)]
+    text = u"{}        ".format(u"".join(text))
 
-# Set a more eye-friendly default brightness
-scrollphathd.set_brightness(0.5)
+    scrollphathd.write_string(
+        text,
+        x=0,
+        y=0,
+        font=font5x7,
+        brightness=get_config("TEXT_BRIGHTNESS", TEXT_BRIGHTNESS),
+    )
 
-text = [unichr(x) for x in range(256)]
+    while stop_event is None or not stop_event.is_set():
+        scrollphathd.show()
+        scrollphathd.scroll()
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
 
-text = u"{}        ".format(u"".join(text))
 
-scrollphathd.write_string(text, x=0, y=0, font=font5x7, brightness=0.5)
-
-while True:
-    scrollphathd.show()
-    scrollphathd.scroll()
-    time.sleep(0.05)
+if __name__ == "__main__":
+    print("Scroll pHAT HD: Hello utf-8\nPress Ctrl+C to exit!\n")
+    try:
+        run_display()
+    except KeyboardInterrupt:
+        scrollphathd.clear()
+        scrollphathd.show()

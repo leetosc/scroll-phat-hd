@@ -5,44 +5,33 @@ import time
 import scrollphathd
 from scrollphathd.fonts import font5x5
 
-print("""
-Scroll pHAT HD: Portrait Clock
+DISPLAY_BRIGHTNESS = 0.3
+ROTATE_DEGREES = 270
+LOOP_SLEEP = 0.1
 
-Displays hours, minutes and seconds in text.
 
-Press Ctrl+C to exit!
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
 
-""")
+    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
+    scrollphathd.rotate(get_config("ROTATE_DEGREES", ROTATE_DEGREES))
 
-scrollphathd.set_brightness(0.3)
-scrollphathd.rotate(270)
+    while stop_event is None or not stop_event.is_set():
+        scrollphathd.clear()
 
-while True:
-    scrollphathd.clear()
+        scrollphathd.write_string(time.strftime("%H"), x=0, y=0, font=font5x5)
+        scrollphathd.write_string(time.strftime("%M"), x=0, y=6, font=font5x5)
+        scrollphathd.write_string(time.strftime("%S"), x=0, y=12, font=font5x5)
 
-    # See https://docs.python.org/2/library/time.html
-    # for more information on what the time formats below do.
+        scrollphathd.show()
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
 
-    # Display the hour as two digits
-    scrollphathd.write_string(
-        time.strftime("%H"),
-        x=0,
-        y=0,
-        font=font5x5)
 
-    # Display the minute as two digits
-    scrollphathd.write_string(
-        time.strftime("%M"),
-        x=0,
-        y=6,
-        font=font5x5)
-
-    # Display the second as two digits
-    scrollphathd.write_string(
-        time.strftime("%S"),
-        x=0,
-        y=12,
-        font=font5x5)
-
-    scrollphathd.show()
-    time.sleep(0.1)
+if __name__ == "__main__":
+    print("Scroll pHAT HD: Portrait Clock\nPress Ctrl+C to exit!\n")
+    try:
+        run_display()
+    except KeyboardInterrupt:
+        scrollphathd.clear()
+        scrollphathd.show()

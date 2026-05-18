@@ -5,32 +5,13 @@ import time
 import scrollphathd
 from scrollphathd.fonts import font3x5
 
-print("""
-Scroll pHAT HD: Hello World
-
-Scrolls "Hello World" across the screen
-in a 3x5 pixel condensed font.
-
-Press Ctrl+C to exit!
-
-""")
-
-# Uncomment the below if your display is upside down
-#   (e.g. if you're using it in a Pimoroni Scroll Bot)
-# scrollphathd.rotate(degrees=180)
-
-# Set a more eye-friendly default brightness
-scrollphathd.set_brightness(0.5)
-
-# Write the string to scroll
-scrollphathd.write_string(" Hello World! ", x=0, y=1, font=font3x5, brightness=1.0)
+DISPLAY_BRIGHTNESS = 0.5
+TEXT = " Hello World! "
+TEXT_BRIGHTNESS = 1.0
+LOOP_SLEEP = 0.05
 
 
 def draw_static_elements(buf):
-    # Buf is given as a two dimensional array of elements buf[x][y]
-    # This method will blink a frame of alternating lights around
-    # our scrolling text twice a second.
-
     if int(time.time() * 2) % 2 == 0:
         for x in range(scrollphathd.DISPLAY_WIDTH):
             if x % 2 == 0:
@@ -45,10 +26,29 @@ def draw_static_elements(buf):
     return buf
 
 
-try:
-    while True:
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
+
+    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
+    scrollphathd.write_string(
+        get_config("TEXT", TEXT),
+        x=0,
+        y=1,
+        font=font3x5,
+        brightness=get_config("TEXT_BRIGHTNESS", TEXT_BRIGHTNESS),
+    )
+
+    while stop_event is None or not stop_event.is_set():
         scrollphathd.show(before_display=draw_static_elements)
         scrollphathd.scroll()
-        time.sleep(0.05)
-except KeyboardInterrupt:
-    pass
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
+
+
+if __name__ == "__main__":
+    print("Scroll pHAT HD: Scroll and Static\nPress Ctrl+C to exit!\n")
+    try:
+        run_display()
+    except KeyboardInterrupt:
+        scrollphathd.clear()
+        scrollphathd.show()

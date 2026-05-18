@@ -6,36 +6,48 @@ import time
 try:
     import psutil
 except ImportError:
-    sys.exit("This script requires the psutil module\nInstall with: sudo pip install psutil")
+    psutil = None
 
 import scrollphathd
 
-print("""
-Scroll pHAT HD: CPU
+GRAPH_LOW = 0
+GRAPH_HIGH = 25
+GRAPH_BRIGHTNESS = 0.25
+LOOP_SLEEP = 0.2
 
-Displays a graph with CPU values.
 
-Press Ctrl+C to exit!
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
 
-""")
+    if psutil is None:
+        raise ImportError(
+            "This script requires the psutil module\nInstall with: sudo pip install psutil"
+        )
 
-i = 0
+    cpu_values = [0] * scrollphathd.DISPLAY_WIDTH
 
-cpu_values = [0] * scrollphathd.DISPLAY_WIDTH
-
-# Uncomment the below if your display is upside down
-# (e.g. if you're using it in a Pimoroni Scroll Bot)
-# scrollphathd.rotate(degrees=180)
-
-while True:
-    try:
+    while stop_event is None or not stop_event.is_set():
         cpu_values.pop(0)
         cpu_values.append(psutil.cpu_percent())
 
-        scrollphathd.set_graph(cpu_values, low=0, high=25, brightness=0.25)
+        scrollphathd.set_graph(
+            cpu_values,
+            low=get_config("GRAPH_LOW", GRAPH_LOW),
+            high=get_config("GRAPH_HIGH", GRAPH_HIGH),
+            brightness=get_config("GRAPH_BRIGHTNESS", GRAPH_BRIGHTNESS),
+        )
 
         scrollphathd.show()
-        time.sleep(0.2)
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
+
+
+if __name__ == "__main__":
+    print("Scroll pHAT HD: CPU\nPress Ctrl+C to exit!\n")
+    if psutil is None:
+        sys.exit("This script requires the psutil module\nInstall with: sudo pip install psutil")
+    try:
+        run_display()
     except KeyboardInterrupt:
         scrollphathd.clear()
-        sys.exit(-1)
+        scrollphathd.show()

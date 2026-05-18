@@ -4,10 +4,16 @@
 # for the Pimoroni Scroll Bot.
 # Copyright (C) 2018 Freddy Spierenburg
 
-import scrollphathd
 import datetime
 import math
 import random
+import time
+
+import scrollphathd
+
+MAX_INTENSITY = 0.6
+MAX_DEGREE = 45
+LOOP_SLEEP = 0.05
 
 
 class Time(object):
@@ -31,15 +37,6 @@ class Clock(Time):
     def __init__(self):
         Time.__init__(self)
 
-    def _hour(self):
-        print(self.hour())
-
-    def _minute(self):
-        print(self.minute())
-
-    def _second(self):
-        print(self.second())
-
     def draw(self):
         self._hour()
         self._minute()
@@ -47,12 +44,12 @@ class Clock(Time):
 
 
 class BinaryClock(Clock):
-    def __init__(self):
+    def __init__(self, max_intensity):
         self._SPHD = ScrollPhatHD()
-        self._max_degree = 45
+        self._max_degree = MAX_DEGREE
         self._hand_position = [2, 4, 7, 9, 12, 14]
         self._hand_bits = 4
-        self._max_intensity = 0.6
+        self._max_intensity = max_intensity
         self._intensities_init(self._max_intensity)
         Clock.__init__(self)
 
@@ -68,19 +65,13 @@ class BinaryClock(Clock):
         self._draw_binary(x_right, value % 10)
 
     def _hour(self):
-        self._draw_hand(self._hand_position[0],
-                        self._hand_position[1],
-                        self.hour())
+        self._draw_hand(self._hand_position[0], self._hand_position[1], self.hour())
 
     def _minute(self):
-        self._draw_hand(self._hand_position[2],
-                        self._hand_position[3],
-                        self.minute())
+        self._draw_hand(self._hand_position[2], self._hand_position[3], self.minute())
 
     def _second(self):
-        self._draw_hand(self._hand_position[4],
-                        self._hand_position[5],
-                        self.second())
+        self._draw_hand(self._hand_position[4], self._hand_position[5], self.second())
 
     def draw(self):
         Clock.draw(self)
@@ -89,7 +80,7 @@ class BinaryClock(Clock):
     def _intensities_init(self, max_intensity):
         self._intensities = {
             hand_position: [
-                self._intensity(max_intensity) for hand_bit in range(self._hand_bits)
+                self._intensity(max_intensity) for _hand_bit in range(self._hand_bits)
             ] for hand_position in self._hand_position
         }
 
@@ -102,7 +93,7 @@ class BinaryClock(Clock):
 
     def _intensity(self, max_intensity):
         while True:
-            for silence in range(random.randrange(99)):
+            for _silence in range(random.randrange(99)):
                 yield 0
             for degree in list(range(self._max_degree)) + list(reversed(range(self._max_degree))):
                 yield math.tan(math.radians(degree)) * max_intensity
@@ -125,12 +116,17 @@ class ScrollPhatHD(object):
         scrollphathd.show()
 
 
-def main():
-    clock = BinaryClock()
-    while True:
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
+
+    clock = BinaryClock(get_config("MAX_INTENSITY", MAX_INTENSITY))
+
+    while stop_event is None or not stop_event.is_set():
         clock.update()
         clock.draw()
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    run_display()

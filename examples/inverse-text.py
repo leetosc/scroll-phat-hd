@@ -1,16 +1,48 @@
 #!/usr/bin/env python
 
-import signal
+import time
 
 import scrollphathd
 from scrollphathd.fonts import font3x5
 
-scrollphathd.set_brightness(0.3)
+DISPLAY_BRIGHTNESS = 0.3
+TEXT = "Ahoy!"
+LOOP_SLEEP = 0.5
 
-scrollphathd.fill(1, 0, 0, 17, 7)
 
-scrollphathd.write_string("Ahoy!", y=1, font=font3x5, brightness=0)
+def draw_static_elements(buf):
+    if int(time.time() * 2) % 2 == 0:
+        for x in range(scrollphathd.DISPLAY_WIDTH):
+            if x % 2 == 0:
+                buf[x][0] = 1.0
+                buf[x][scrollphathd.DISPLAY_HEIGHT - 1] = 1.0
 
-scrollphathd.show()
+        for y in range(scrollphathd.DISPLAY_HEIGHT):
+            if y % 2 == 0:
+                buf[0][y] = 1.0
+                buf[scrollphathd.DISPLAY_WIDTH - 1][y] = 1.0
 
-signal.pause()
+    return buf
+
+
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
+
+    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
+    scrollphathd.fill(1, 0, 0, 17, 7)
+    scrollphathd.write_string(get_config("TEXT", TEXT), y=1, font=font3x5, brightness=0)
+    scrollphathd.show()
+
+    while stop_event is None or not stop_event.is_set():
+        scrollphathd.show(before_display=draw_static_elements)
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
+
+
+if __name__ == "__main__":
+    print("Scroll pHAT HD: Inverse Text\nPress Ctrl+C to exit!\n")
+    try:
+        run_display()
+    except KeyboardInterrupt:
+        scrollphathd.clear()
+        scrollphathd.show()

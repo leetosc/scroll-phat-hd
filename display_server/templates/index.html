@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scroll pHAT HD</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Scroll pHAT HD</h1>
+    <p class="subtitle">Display controller</p>
+  </header>
+
+  <div id="banner" class="banner hidden"></div>
+
+  <section class="card">
+    <h2>Mode</h2>
+    <div class="row">
+      <select id="mode-select"></select>
+      <button type="button" id="btn-switch">Switch mode</button>
+    </div>
+    <p id="mode-note" class="hint"></p>
+  </section>
+
+  <section class="card">
+    <h2>Settings</h2>
+    <form id="config-form"></form>
+    <div class="row actions">
+      <button type="submit" form="config-form">Apply</button>
+      <button type="button" id="btn-reset">Reset to defaults</button>
+    </div>
+  </section>
+
+  <section class="card status">
+    <h2>Status</h2>
+    <p>Active: <strong id="active-mode">—</strong></p>
+  </section>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

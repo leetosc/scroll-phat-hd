@@ -5,28 +5,37 @@ import time
 import scrollphathd
 from scrollphathd.fonts import font5x7
 
-print("""
-Scroll pHAT HD: Hello World
+DISPLAY_BRIGHTNESS = 0.5
+ROTATE_DEGREES = 90
+INITIAL_DELAY = 0.5
+LOOP_SLEEP = 0.05
+LINE1 = "Hello World! "
+LINE2 = "How are you? "
 
-Scrolls "Hello World" across the screen
-in a 5x7 pixel large font.
 
-Press Ctrl+C to exit!
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
 
-""")
+    scrollphathd.rotate(degrees=get_config("ROTATE_DEGREES", ROTATE_DEGREES))
+    scrollphathd.set_brightness(get_config("DISPLAY_BRIGHTNESS", DISPLAY_BRIGHTNESS))
 
-scrollphathd.rotate(degrees=90)
-
-# Set a more eye-friendly default brightness
-scrollphathd.set_brightness(0.5)
-
-scrollphathd.write_string("Hello World! ", x=0, y=0, font=font5x7)
-scrollphathd.write_string("How are you? ", x=0, y=8, font=font5x7)
-scrollphathd.show()
-
-time.sleep(0.5)
-
-while True:
+    scrollphathd.write_string(get_config("LINE1", LINE1), x=0, y=0, font=font5x7)
+    scrollphathd.write_string(get_config("LINE2", LINE2), x=0, y=8, font=font5x7)
     scrollphathd.show()
-    scrollphathd.scroll()
-    time.sleep(0.05)
+
+    time.sleep(get_config("INITIAL_DELAY", INITIAL_DELAY))
+
+    while stop_event is None or not stop_event.is_set():
+        scrollphathd.show()
+        scrollphathd.scroll()
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
+
+
+if __name__ == "__main__":
+    print("Scroll pHAT HD: Sideways\nPress Ctrl+C to exit!\n")
+    try:
+        run_display()
+    except KeyboardInterrupt:
+        scrollphathd.clear()
+        scrollphathd.show()

@@ -92,6 +92,8 @@ else:
 # Debug flag  - set to 1 if you want to print(informative console messages)
 DEBUG = 0
 
+LOOP_SLEEP = 0.05
+
 # Initialize global variables before use
 current_temp = 0.0
 average_temp = 0.0
@@ -279,47 +281,76 @@ def display_temp_value():
     return
 
 
-# BEGIN MAIN LOGIC
+def _sync_config(get_config):
+    global OW_API_KEY, OW_STATION, POLL_INTERVAL, AVG_TEMP_RESET_INTERVAL
+    global CURRENT_TEMP_DISPLAY, BRIGHT, DIM, GUST_BRIGHTNESS, WIND_BRIGHTNESS
+    global KR_PULSE_DELAY, TEMP_SCALE, MAX_WIND_SPEED, DEBUG
 
-print("'Live' temperature and wind display using OpenWeather data.")
-print("Uses Raspberry Pi and Scrollphathd display. Written by Mark Ehr, January 2018")
-print("Updated to OpenWeather APIs by Will Dolezal, December 2021, and kept alive by you.")
-print("Press Ctrl-C to exit")
-print("Current weather station: ", OW_STATION)
+    OW_API_KEY = get_config("OW_API_KEY", OW_API_KEY)
+    OW_STATION = get_config("OW_STATION", OW_STATION)
+    POLL_INTERVAL = int(get_config("POLL_INTERVAL", POLL_INTERVAL))
+    AVG_TEMP_RESET_INTERVAL = int(get_config("AVG_TEMP_RESET_INTERVAL", AVG_TEMP_RESET_INTERVAL))
+    CURRENT_TEMP_DISPLAY = int(get_config("CURRENT_TEMP_DISPLAY", CURRENT_TEMP_DISPLAY))
+    BRIGHT = get_config("BRIGHT", BRIGHT)
+    DIM = get_config("DIM", DIM)
+    GUST_BRIGHTNESS = get_config("GUST_BRIGHTNESS", GUST_BRIGHTNESS)
+    WIND_BRIGHTNESS = get_config("WIND_BRIGHTNESS", WIND_BRIGHTNESS)
+    KR_PULSE_DELAY = get_config("KR_PULSE_DELAY", KR_PULSE_DELAY)
+    TEMP_SCALE = get_config("TEMP_SCALE", TEMP_SCALE)
+    DEBUG = int(get_config("DEBUG", DEBUG))
+    if TEMP_SCALE == "F":
+        MAX_WIND_SPEED = 42.0
+    else:
+        MAX_WIND_SPEED = 100.0
 
-# Initial weather data poll and write to display
-get_weather_data()
-display_temp_value()
-draw_wind_line()
 
-# Loop forever until user hits Ctrl-C
-# Ctrl-C raises a KeyboardInterrupt and prevents any code below the 'while True' statement from running.
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
 
-while True:
-    if not (int(time.time()) % POLL_INTERVAL):
-        prev_temp = current_temp
-        get_weather_data()
+    _sync_config(get_config)
+
+    get_weather_data()
+    display_temp_value()
+    draw_wind_line()
+
+    while stop_event is None or not stop_event.is_set():
+        _sync_config(get_config)
+
+        if not (int(time.time()) % POLL_INTERVAL):
+            get_weather_data()
+            scrollphathd.clear()
+            draw_wind_line()
+            if current_temp < average_temp and (current_temp < 100 or current_temp < -9):
+                if DEBUG:
+                    print(time.asctime(time.localtime(time.time())), "Actual temp", actual_str, "Feels like temp", feels_like_str, "-")
+                draw_temp_trend(-1)
+            elif current_temp == average_temp and (current_temp < 100 or current_temp < -9):
+                if DEBUG:
+                    print(time.asctime(time.localtime(time.time())), "Actual temp", actual_str, "Feels like temp", feels_like_str, "=")
+                draw_temp_trend(0)
+            elif current_temp > average_temp and (current_temp < 100 or current_temp < -9):
+                if DEBUG:
+                    print(time.asctime(time.localtime(time.time())), "Actual temp", actual_str, "Feels like temp", feels_like_str, "+")
+                draw_temp_trend(1)
+            display_temp_value()
+
+        for pulse in range(1, 5):
+            if stop_event is not None and stop_event.is_set():
+                return
+            draw_kr_pulse(pulse, 1)
+        for pulse in range(5, 1, -1):
+            if stop_event is not None and stop_event.is_set():
+                return
+            draw_kr_pulse(pulse, -1)
+
+
+if __name__ == "__main__":
+    print("'Live' temperature and wind display using OpenWeather data.")
+    print("Press Ctrl-C to exit")
+    print("Current weather station: ", OW_STATION)
+    try:
+        run_display()
+    except KeyboardInterrupt:
         scrollphathd.clear()
-        draw_wind_line()
-        # Don't show temp trend arrow if > 100 degrees or < -10 degrees -- not enough room on the display.
-        if current_temp < average_temp and (current_temp < 100 or current_temp < -9):
-            if DEBUG:
-                print(time.asctime(time.localtime(time.time())), "Actual temp", actual_str, "Feels like temp", feels_like_str, "-")
-            draw_temp_trend(-1)
-        elif current_temp == average_temp and (current_temp < 100 or current_temp < -9):
-            if DEBUG:
-                print(time.asctime(time.localtime(time.time())), "Actual temp", actual_str, "Feels like temp", feels_like_str, "=")
-            draw_temp_trend(0)
-        elif current_temp > average_temp and (current_temp < 100 or current_temp < -9):
-            if DEBUG:
-                print(time.asctime(time.localtime(time.time())), "Actual temp", actual_str, "Feels like temp", feels_like_str, "+")
-            draw_temp_trend(1)
-        display_temp_value()   # If you want actual temp, just change to ACTUAL
-
-    # Pulse a pixel, Knight Rider style, just to show that everything is alive and working.
-    # Sleep function in draw_kr_pulse keeps Python from consuming 100% CPU
-    # Use display line 5, 14-17
-    for pulse in range(1, 5):
-        draw_kr_pulse(pulse, 1)   # Left to right
-    for pulse in range(5, 1, -1):
-        draw_kr_pulse(pulse, -1)   # Back the other way
+        scrollphathd.show()

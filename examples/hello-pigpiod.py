@@ -2,23 +2,16 @@
 
 import time
 
-import pigpio
 import scrollphathd
 
-print("""
-Scroll pHAT HD: Hello World
-
-Scrolls "Hello World" across the screen
-using the default 5x7 pixel large font.
-
-Press Ctrl+C to exit!
-
-""")
+TEXT = " Hello World!"
+TEXT_BRIGHTNESS = 0.5
+LOOP_SLEEP = 0.1
 
 
-class I2C_PIGPIO():
-    def __init__(self):
-        self.pi = pigpio.pi()
+class I2C_PIGPIO(object):
+    def __init__(self, pigpio_module):
+        self.pi = pigpio_module.pi()
         self.i2c_handle = self.pi.i2c_open(1, 0x74)
 
     def write_byte_data(self, address, register, value):
@@ -31,20 +24,31 @@ class I2C_PIGPIO():
         self.pi.i2c_write_i2c_block_data(self.i2c_handle, register, values)
 
 
-scrollphathd.setup(i2c_dev=I2C_PIGPIO())
-# Uncomment the below if your display is upside down
-# (e.g. if you're using it in a Pimoroni Scroll Bot)
-# scrollphathd.rotate(degrees=180)
+def run_display(stop_event=None, get_config=None):
+    if get_config is None:
+        get_config = lambda k, d=None: globals().get(k, d)
 
-# Write the "Hello World!" string in the buffer and
-# set a more eye-friendly default brightness
-scrollphathd.write_string(" Hello World!", brightness=0.5)
+    try:
+        import pigpio
+    except ImportError:
+        raise ImportError("This script requires pigpiod and the pigpio module")
 
-# Auto scroll using a while + time mechanism (no thread)
-while True:
-    # Show the buffer
-    scrollphathd.show()
-    # Scroll the buffer content
-    scrollphathd.scroll()
-    # Wait for 0.1s
-    time.sleep(0.1)
+    scrollphathd.setup(i2c_dev=I2C_PIGPIO(pigpio))
+    scrollphathd.write_string(
+        get_config("TEXT", TEXT),
+        brightness=get_config("TEXT_BRIGHTNESS", TEXT_BRIGHTNESS),
+    )
+
+    while stop_event is None or not stop_event.is_set():
+        scrollphathd.show()
+        scrollphathd.scroll()
+        time.sleep(get_config("LOOP_SLEEP", LOOP_SLEEP))
+
+
+if __name__ == "__main__":
+    print("Scroll pHAT HD: Hello World (pigpio)\nPress Ctrl+C to exit!\n")
+    try:
+        run_display()
+    except KeyboardInterrupt:
+        scrollphathd.clear()
+        scrollphathd.show()
