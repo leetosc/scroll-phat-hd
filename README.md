@@ -80,6 +80,7 @@ On the Pi, install Flask and enable the systemd service (disable any old `clock4
 ```bash
 cd /home/pi/scroll-phat-hd
 pip3 install -r requirements-display.txt
+# On older Raspberry Pi OS images, if pip fails, use: sudo apt-get install python3-flask
 sudo cp deploy/scroll-display.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now scroll-display.service
