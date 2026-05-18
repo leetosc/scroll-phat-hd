@@ -1,5 +1,6 @@
 let modes = [];
 let state = { mode: null, config: {}, error: null };
+let formDirty = false;
 
 const modeSelect = document.getElementById("mode-select");
 const configForm = document.getElementById("config-form");
@@ -160,7 +161,9 @@ function updateUI() {
     banner.classList.add("hidden");
   }
 
-  buildConfigForm();
+  if (!formDirty) {
+    buildConfigForm();
+  }
 }
 
 async function refreshState() {
@@ -176,8 +179,16 @@ async function loadModes() {
     .join("");
 }
 
+configForm.addEventListener("input", () => {
+  formDirty = true;
+});
+configForm.addEventListener("change", () => {
+  formDirty = true;
+});
+
 document.getElementById("btn-switch").addEventListener("click", async () => {
   const mode = modeSelect.value;
+  formDirty = false;
   state = await fetchJson("/api/mode", {
     method: "POST",
     body: JSON.stringify({ mode }),
@@ -205,10 +216,12 @@ configForm.addEventListener("submit", async (e) => {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
+  formDirty = false;
   updateUI();
 });
 
 document.getElementById("btn-reset").addEventListener("click", async () => {
+  formDirty = false;
   state = await fetchJson("/api/reset", { method: "POST" });
   updateUI();
 });
